@@ -1,11 +1,28 @@
-(* 
-   Christian Kaas
-   Letters from Whitechapel - A Game Solver
-   Spring 2018
-*)
+(**************************************************************************)
+(*                                                                        *)
+(*  Letters from Whitechapel: A Model and Solver                          *)
+(*  Copyright (C) 2018                                                    *)
+(*  Christian Kaas                                                        *)
+(*                                                                        *)
+(*  Based on the Cobblepot Games' popular "Letters from Whitechapel"      *)
+(*  boardgame by Gabriele Mari and Gianluca Santopietro                   *)
+(*  http://www.sirchestercobblepot.com/en/letters-from-whitechapel/       *)
+(*                                                                        *)
+(**************************************************************************)
 
-(* This module provides a model for a Whitechapel-like board game, implemented
-   as an adjacency hashtable *)
+(* This file provides some basic geometry information about the Whitechapel
+   game board. We start by defining some data types useful for modeling
+   vertices and edges in a connected graph.
+
+   Node naming nomenclature, steps and alleyway data below adapted from
+   Dienes' excellent "Logical Map Structure CSV" for Whitechapel
+   https://boardgamegeek.com/filepage/162384/logical-map-structure-csv
+
+   Note that Dienes' CSV mostly describes the visual connections between
+   different nodes on the board, and not abstract connections underpinning
+   regular and carriage moves by Jack - this logic will need to be handled
+   separately. The exception to this are alleyways, which are fully
+   described below *)
    
 type node_type = 
   | Circle of int

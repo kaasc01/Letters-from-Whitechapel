@@ -1,8 +1,14 @@
-(* 
-   Christian Kaas
-   Letters from Whitechapel - A Game Solver
-   Spring 2018
-*)
+(**************************************************************************)
+(*                                                                        *)
+(*  Letters from Whitechapel: A Model and Solver                          *)
+(*  Copyright (C) 2018                                                    *)
+(*  Christian Kaas                                                        *)
+(*                                                                        *)
+(*  Based on the Cobblepot Games' popular "Letters from Whitechapel"      *)
+(*  boardgame by Gabriele Mari and Gianluca Santopietro                   *)
+(*  http://www.sirchestercobblepot.com/en/letters-from-whitechapel/       *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* This module provides a model for a Whitechapel-like board game, implemented
    as an adjacency hashtable *)
@@ -174,10 +180,11 @@ module Whitechapel : GAMEBOARD =
       load_geometry board Step steps;
       (* Use steps data to infer Move geometry *)
       load_geometry board Move (structure_inference board infer_circles);
-      (* Use move data to infer Carriage geometry *)
+      (* Use Move data to infer Carriage geometry *)
       load_geometry board Carriage (structure_inference board infer_carriages);
-      (* Load alleyways last *)
+      (* Load Alleyways last *)
       load_geometry board Alleyway alleyways;
+      (* Return a fully connected Whitechapel board *)
       board
 
     (* Returns the set of vertices possible after making a Move from
