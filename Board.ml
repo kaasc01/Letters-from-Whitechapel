@@ -140,9 +140,8 @@ module Whitechapel : GAMEBOARD =
        started, ensure origin doesn appear in the result set *)
       S.remove n !result
 
-    (* While the Geometry data does not explicit Circle to Circle moves, we
-       can infer these at load time, and create explicit edges for more
-       efficient traversal *)
+    (* Formats edge relationships infered by function f into the format
+       expected by load_geometry *)
     let structure_inference (g : Graph.t)
                             (f : Graph.t -> Vertex.t -> S.t)
                           : (Vertex.t * Vertex.t list) list =
