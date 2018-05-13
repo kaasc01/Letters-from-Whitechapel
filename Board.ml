@@ -44,14 +44,13 @@ module type GAMEBOARD =
   sig
     type t
     val create : unit -> t
-    val pull_circles : t -> Vertex.t -> Edge.t -> Vertex.t list
     val single : t -> Vertex.t -> Vertex.t list
     val carriage : t -> Vertex.t -> Vertex.t list
     val alleyway : t -> Vertex.t -> Vertex.t list
   end
 
 
-module Whitechapel  =
+module Whitechapel : GAMEBOARD =
   struct
     
     (* Implements a standard graph structure, and make all the default
@@ -95,9 +94,9 @@ module Whitechapel  =
       !results
 
     (* While the Geometry data does not explicit Circle to Circle moves, we
-       can infer these at load time, and create explicit edges for more
-       efficient traversal *)
-    let pull_circles (g : Graph.t) (n : Vertex.t) : S.t =
+       can infer these at load time from the step data, and create explicit
+       edges for more efficient traversal *)
+    let infer_circles (g : Graph.t) (n : Vertex.t) : S.t =
       (* Keep track of visited vertices *)
       let visited = ref (S.singleton n) in
       (* Define a shorthand for unvisited successors of a vertex *)
@@ -122,16 +121,37 @@ module Whitechapel  =
       done;
       !result
 
+    (* While the Geometry data does not explicit carriages moves, we
+       can also infer these from the infered Move data, and again create
+       explicit edges for more efficient traversal *)
+    let infer_carriages (g : Graph.t) (n : Vertex.t) : S.t = 
+      (* Keep track of possible vertices *)
+      let result : S.t ref = ref (S.empty) in
+      (* Updates the result set to be the union of result and a set s *)
+      let add_to_result (s : S.t) : unit = result := S.union s !result in
+      (* Returns a list of possible vertices after a single Move from n *)
+      let get_moves (n : Vertex.t) : S.t = succ_e g n Move () in
+      (* Returns a list of possible vertices after the first Move *)
+      let first : Vertex.t list = S.elements (get_moves n) in
+      (* Iterate through all the vertices possible after the first Move,
+         adding all vertices possible after a second Move to the result set *)
+      List.iter (fun v -> (add_to_result (succ_e g v Move ()))) first;
+      (* As rules disallow for a carriage move to end up in the same place it
+       started, ensure origin doesn appear in the result set *)
+      S.remove n !result
+
     (* While the Geometry data does not explicit Circle to Circle moves, we
        can infer these at load time, and create explicit edges for more
        efficient traversal *)
-    let infer_moves (g : Graph.t) =
+    let structure_inference (g : Graph.t)
+                            (f : Graph.t -> Vertex.t -> S.t)
+                          : (Vertex.t * Vertex.t list) list =
       let open List in
       let circles = 195 in
       let vertices = init (circles) (fun x -> circles - x) in
       let format acc elt =
         let vertex = Circle elt in
-        let links = S.elements (pull_circles g vertex) in
+        let links = S.elements (f g vertex) in
         (vertex, links) :: acc
       in
       fold_left format [] vertices
@@ -146,30 +166,34 @@ module Whitechapel  =
           List.iter (fun v2 -> Graph.add_edge_e g (v1, t, v2)) v2_lst;
           load_geometry g t tl
 
-    let make_moves (g : Graph.t) (n : Vertex.t) (c : int) : Vertex.t list = 
-    
-
-
-    let single (g : Graph.t) (n : Vertex.t) : Vertex.t list =
-      S.elements (succ_e g n Move ())
-
-    let carriage (g : Graph.t) (n : Vertex.t) : Vertex.t list =
-      let first = single g n in
-      let second_with_overlap =
-        List.fold_left (fun elt -> ) first in 
-
-    let alleyway (g : Graph.t) (n : Vertex.t) : Vertex.t list =
-      S.elements (succ_e g n Alleyway ())
-
+    (* Creates a graph to represent the Whitechapel board. Steps and alleyways
+       are loaded directly from the Geometry data, while Moves and Carriages
+       are first infered, then made explicit *)
     let create () : Graph.t =
       let board = Graph.create () in 
       (* Load steps first *)
       load_geometry board Step steps;
       (* Use steps data to infer Move geometry *)
-      load_geometry board Move (infer_moves board);
-      (* Load alleyways last*)
+      load_geometry board Move (structure_inference board infer_circles);
+      (* Use move data to infer Carriage geometry *)
+      load_geometry board Carriage (structure_inference board infer_carriages);
+      (* Load alleyways last *)
       load_geometry board Alleyway alleyways;
-
       board
+
+    (* Returns the set of vertices possible after making a Move from
+       vertex n on graph g *)
+    let single (g : Graph.t) (n : Vertex.t) : Vertex.t list =
+      S.elements (succ_e g n Move ())
+
+    (* Returns the set of vertices possible after taking a Carriage from
+       vertex n on graph g *)
+    let carriage (g : Graph.t) (n : Vertex.t) : Vertex.t list =
+      S.elements (succ_e g n Carriage ())
+
+    (* Returns the set of vertices possible after taking an Alleyway from
+       vertex n on graph g *)
+    let alleyway (g : Graph.t) (n : Vertex.t) : Vertex.t list =
+      S.elements (succ_e g n Alleyway ())
 
    end

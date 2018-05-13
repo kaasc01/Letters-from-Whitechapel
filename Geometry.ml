@@ -20,6 +20,7 @@ and direction =
 
 type move_type =
   | Move
+  | Carriage
   | Alleyway
   | Step
 
