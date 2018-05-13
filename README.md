@@ -1,1 +1,1 @@
-Readme.
+![LFW Logo](/_assets/img/LFW.png)
