@@ -53,6 +53,7 @@ module type GAMEBOARD =
     val single : t -> Vertex.t -> Vertex.t list
     val carriage : t -> Vertex.t -> Vertex.t list
     val alleyway : t -> Vertex.t -> Vertex.t list
+    val remove_circle : t -> Vertex.t -> unit
   end
 
 
@@ -186,6 +187,10 @@ module Whitechapel : GAMEBOARD =
       load_geometry board Alleyway alleyways;
       (* Return a fully connected Whitechapel board *)
       board
+
+    (* Removes the vertex n from the graph g *)
+    let remove_circle (g : Graph.t) (n : Vertex.t) : unit =
+      Graph.remove_vertex g n 
 
     (* Returns the set of vertices possible after making a Move from
        vertex n on graph g *)
