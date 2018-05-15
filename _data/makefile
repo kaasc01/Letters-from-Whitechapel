@@ -1,7 +1,7 @@
-all: board geometry graphicstest writetest inference
+all: inference
 
-inference: Inference.ml
-	ocamlbuild -use-ocamlfind Inference.byte
+inference: inference.ml
+	ocamlbuild -use-ocamlfind inference.byte
 
 clean:
 	rm -rf _build *.byte

@@ -1,16 +1,20 @@
 ### Starting build.
-# Target: Inference.ml.depends, tags: { package(ocamlgraph), extension:ml, file:Inference.ml, ocaml, ocamldep, quiet, thread, traverse, use_graphics }
-ocamlfind ocamldep -package ocamlgraph -modules Inference.ml > Inference.ml.depends
-# Target: Geometry.ml.depends, tags: { package(ocamlgraph), extension:ml, file:Geometry.ml, ocaml, ocamldep, quiet, thread, traverse, use_graphics }
-ocamlfind ocamldep -package ocamlgraph -modules Geometry.ml > Geometry.ml.depends
-# Target: Header.ml.depends, tags: { package(ocamlgraph), extension:ml, file:Header.ml, ocaml, ocamldep, quiet, thread, traverse, use_graphics }
-ocamlfind ocamldep -package ocamlgraph -modules Header.ml > Header.ml.depends
-# Target: Geometry.cmo, tags: { package(ocamlgraph), byte, compile, extension:cmo, extension:ml, file:Geometry.cmo, file:Geometry.ml, implem, ocaml, quiet, thread, traverse, use_graphics }
-ocamlfind ocamlc -c -thread -package ocamlgraph -o Geometry.cmo Geometry.ml
-# Target: Header.cmo, tags: { package(ocamlgraph), byte, compile, extension:cmo, extension:ml, file:Header.cmo, file:Header.ml, implem, ocaml, quiet, thread, traverse, use_graphics }
-ocamlfind ocamlc -c -thread -package ocamlgraph -o Header.cmo Header.ml
-# Target: Inference.cmo, tags: { package(ocamlgraph), byte, compile, extension:cmo, extension:ml, file:Inference.cmo, file:Inference.ml, implem, ocaml, quiet, thread, traverse, use_graphics }
-ocamlfind ocamlc -c -thread -package ocamlgraph -o Inference.cmo Inference.ml
-# Target: Inference.byte, tags: { package(ocamlgraph), byte, dont_link_with, extension:byte, file:Inference.byte, link, ocaml, program, quiet, thread, traverse, use_graphics }
-ocamlfind ocamlc -linkpkg graphics.cma -thread -package ocamlgraph Geometry.cmo Header.cmo Inference.cmo -o Inference.byte
+# Target: inference.ml.depends, tags: { package(ocamlgraph), extension:ml, file:inference.ml, ocaml, ocamldep, quiet, thread, traverse, use_graphics }
+ocamlfind ocamldep -package ocamlgraph -modules inference.ml > inference.ml.depends
+# Target: geometry.ml.depends, tags: { package(ocamlgraph), extension:ml, file:geometry.ml, ocaml, ocamldep, quiet, thread, traverse, use_graphics }
+ocamlfind ocamldep -package ocamlgraph -modules geometry.ml > geometry.ml.depends
+# Target: headers.ml.depends, tags: { package(ocamlgraph), extension:ml, file:headers.ml, ocaml, ocamldep, quiet, thread, traverse, use_graphics }
+ocamlfind ocamldep -package ocamlgraph -modules headers.ml > headers.ml.depends
+# Target: steps.ml.depends, tags: { package(ocamlgraph), extension:ml, file:steps.ml, ocaml, ocamldep, quiet, thread, traverse, use_graphics }
+ocamlfind ocamldep -package ocamlgraph -modules steps.ml > steps.ml.depends
+# Target: geometry.cmo, tags: { package(ocamlgraph), byte, compile, extension:cmo, extension:ml, file:geometry.cmo, file:geometry.ml, implem, ocaml, quiet, thread, traverse, use_graphics }
+ocamlfind ocamlc -c -thread -package ocamlgraph -o geometry.cmo geometry.ml
+# Target: headers.cmo, tags: { package(ocamlgraph), byte, compile, extension:cmo, extension:ml, file:headers.cmo, file:headers.ml, implem, ocaml, quiet, thread, traverse, use_graphics }
+ocamlfind ocamlc -c -thread -package ocamlgraph -o headers.cmo headers.ml
+# Target: steps.cmo, tags: { package(ocamlgraph), byte, compile, extension:cmo, extension:ml, file:steps.cmo, file:steps.ml, implem, ocaml, quiet, thread, traverse, use_graphics }
+ocamlfind ocamlc -c -thread -package ocamlgraph -o steps.cmo steps.ml
+# Target: inference.cmo, tags: { package(ocamlgraph), byte, compile, extension:cmo, extension:ml, file:inference.cmo, file:inference.ml, implem, ocaml, quiet, thread, traverse, use_graphics }
+ocamlfind ocamlc -c -thread -package ocamlgraph -o inference.cmo inference.ml
+# Target: inference.byte, tags: { package(ocamlgraph), byte, dont_link_with, extension:byte, file:inference.byte, link, ocaml, program, quiet, thread, traverse, use_graphics }
+ocamlfind ocamlc -linkpkg graphics.cma -thread -package ocamlgraph geometry.cmo headers.cmo steps.cmo inference.cmo -o inference.byte
 # Compilation successful.
