@@ -21,11 +21,13 @@
       #directory "/home/christian/CS/Projects/Whitechapel" ;;
       #mod_use "Geometry.ml";;
       open Geometry;;
-
+      #mod_use "Header.ml";;
+      open Header;;
  *) 
 
 open Graph
 open Geometry
+open Header
 
 (* Describe vertex interface and implementation here *)
 module Vertex =
@@ -57,7 +59,7 @@ module type GAMEBOARD =
   end
 
 
-module Whitechapel : GAMEBOARD =
+module Whitechapel =
   struct
     
     (* Implements a standard graph structure, and make all the default
@@ -103,7 +105,7 @@ module Whitechapel : GAMEBOARD =
     (* While the Geometry data does not explicit Circle to Circle moves, we
        can infer these at load time from the step data, and create explicit
        edges for more efficient traversal *)
-    let infer_circles (g : Graph.t) (n : Vertex.t) : S.t =
+    let infer_moves (g : Graph.t) (n : Vertex.t) : S.t =
       (* Keep track of visited vertices *)
       let visited = ref (S.singleton n) in
       (* Define a shorthand for unvisited successors of a vertex *)
@@ -147,6 +149,38 @@ module Whitechapel : GAMEBOARD =
        started, ensure origin doesn appear in the result set *)
       S.remove n !result
 
+    (* Loads a dataset of edges into the graph g, assigning type t to the
+       edges created *)
+    let rec load_geometry (g : Graph.t) (t : Edge.t)
+                          (dataset : (Vertex.t * Vertex.t list) list) : unit =
+      match dataset with
+      | [] -> ()
+      | (v1, v2_lst) :: tl ->
+          List.iter (fun v2 -> Graph.add_edge_e g (v1, t, v2)) v2_lst;
+          load_geometry g t tl
+
+    (* Given a circle, returns its index *)
+    let extract_circle (elt : Vertex.t) : int =
+      match elt with
+      | Circle n -> n
+      | _ -> raise (Invalid_argument "extract_circle: unexpected match")
+
+    (* Given a list of infered connnections, removes any redundant links and
+       filters the list for vertices with empty connection lists *)
+    let filter_inference (lst : (Vertex.t * Vertex.t list) list)
+                       : (Vertex.t * Vertex.t list) list =
+      let open List in
+      (* Filters a list lst for any Circles whose index is less than m *)
+      let reduce_vlist (m : int) (lst : Vertex.t list) : Vertex.t list =
+        filter (fun elt -> (extract_circle elt) > m) lst
+      in
+      (* Removes redundant links in the inference *)
+      let unique_connections =
+        map (fun (v, vlist) -> (v, reduce_vlist (extract_circle v) vlist)) lst
+      in
+      (* Filters the inference list for any empty connection lists *)
+      filter (fun (v, vlist) -> vlist <> []) unique_connections
+
     (* Formats edge relationships infered by function f into the format
        expected by load_geometry *)
     let structure_inference (g : Graph.t)
@@ -160,51 +194,81 @@ module Whitechapel : GAMEBOARD =
         let links = S.elements (f g vertex) in
         (vertex, links) :: acc
       in
-      fold_left format [] vertices
+      filter_inference (fold_left format [] vertices)
 
-    (* Loads a dataset of edges into the graph g, assigning type t to the
-       edges created *)
-    let rec load_geometry (g : Graph.t) (t : Edge.t)
-                          (dataset : (Vertex.t * Vertex.t list) list) : unit =
-      match dataset with
-      | [] -> ()
-      | (v1, v2_lst) :: tl ->
-          List.iter (fun v2 -> Graph.add_edge_e g (v1, t, v2)) v2_lst;
-          load_geometry g t tl
+    (* Given an integer n, pretty-prints a Circle as a string *)
+    let serialize_circle (n : int) : string = "Circle " ^ string_of_int n
 
-    (* Creates a graph to represent the Whitechapel board. Steps and alleyways
-       are loaded directly from the Geometry data, while Moves and Carriages
-       are first infered, then made explicit *)
+    (* Given a list of vertices, pretty prints the list as a string *)
+    let serialize_vlist (s : Vertex.t list) : string =
+      let f acc elt = "Circle " ^ string_of_int (extract_circle elt)
+                      ^ (if acc <> "" then "; " ^ acc else "")
+      in
+      "[" ^ List.fold_left f "" s ^ "]"
+
+    (* Given an integer n, and a list of vertices, pretty prints a tuple as 
+       a string *)
+    let serialize_connections (n : int) (lst : Vertex.t list) : string =
+      "(" ^ serialize_circle n ^ ", " ^ (serialize_vlist lst) ^ ")"
+
+    (* Given a list of connection tuples, pretty prints the list as a string to
+       the channel c *)
+    let serialize_connection_list (lst : (Vertex.t * Vertex.t list) list)
+                                  (oc : out_channel) : unit =
+      let open Printf in
+      let rec print_loop lst pref =
+        match lst with
+        | [] -> ()
+        | (v, vlist) :: tl ->
+            match v with
+            | Circle n -> let line =
+                            pref ^ (serialize_connections n vlist)
+                          in fprintf oc "%s" line;
+                          print_loop tl ";\n   "
+            | _ -> raise (Invalid_argument "serialize_connection_list: \
+                                            unexpected match")
+      in
+      print_loop lst "\n  [" ;;    
+
+    (* Given a list of connection tuples, prints the result to a file f, stored
+       with variable name v *)
+    let print_inference (lst : (Vertex.t * Vertex.t list) list)
+                        (v : string) (f : string)
+                       : unit =
+      let open Printf in
+      (* Open an out channel to the file named f *)
+      let oc = open_out f in
+      (* First, print a copy of the project header *)
+      fprintf oc "%s\n\n" header;
+      (* Then, introduce a let statement for a new variable named v *)
+      fprintf oc ("let %s =") v;
+      (* Next, print the data in list lst *)
+      serialize_connection_list lst oc;
+      (* Finally, print a close for the list *)
+      fprintf oc "]";
+      (* Close the out channel *)
+      close_out oc;
+    ;;
+
     let create () : Graph.t =
       let board = Graph.create () in 
       (* Load steps first *)
       load_geometry board Step steps;
-      (* Use steps data to infer Move geometry *)
-      load_geometry board Move (structure_inference board infer_circles);
-      (* Use Move data to infer Carriage geometry *)
-      load_geometry board Carriage (structure_inference board infer_carriages);
-      (* Load Alleyways last *)
-      load_geometry board Alleyway alleyways;
-      (* Return a fully connected Whitechapel board *)
-      board
+      board;;
 
-    (* Removes the vertex n from the graph g *)
-    let remove_circle (g : Graph.t) (n : Vertex.t) : unit =
-      Graph.remove_vertex g n 
-
-    (* Returns the set of vertices possible after making a Move from
-       vertex n on graph g *)
-    let single (g : Graph.t) (n : Vertex.t) : Vertex.t list =
-      S.elements (succ_e g n Move ())
-
-    (* Returns the set of vertices possible after taking a Carriage from
-       vertex n on graph g *)
-    let carriage (g : Graph.t) (n : Vertex.t) : Vertex.t list =
-      S.elements (succ_e g n Carriage ())
-
-    (* Returns the set of vertices possible after taking an Alleyway from
-       vertex n on graph g *)
-    let alleyway (g : Graph.t) (n : Vertex.t) : Vertex.t list =
-      S.elements (succ_e g n Alleyway ())
+    let () =
+      (* Create an empty board *)
+      let board = create () in
+      (* Load steps data into board *)
+      load_geometry board Step steps;
+      (* Infer moves based on steps, and add to board *)
+      let moves = structure_inference board infer_moves in
+      load_geometry board Move moves;
+      (* Print moves to file *)
+      print_inference moves "moves" "Moves.ml";
+      (* Infer carriages based on moves, and add to board *)
+      let carriages = structure_inference board infer_carriages in
+      (* Print carriages to file *)
+      print_inference carriages "carriages" "Carriages.ml";
 
    end

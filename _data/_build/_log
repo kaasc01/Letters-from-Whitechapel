@@ -1,0 +1,16 @@
+### Starting build.
+# Target: Inference.ml.depends, tags: { package(ocamlgraph), extension:ml, file:Inference.ml, ocaml, ocamldep, quiet, thread, traverse, use_graphics }
+ocamlfind ocamldep -package ocamlgraph -modules Inference.ml > Inference.ml.depends
+# Target: Geometry.ml.depends, tags: { package(ocamlgraph), extension:ml, file:Geometry.ml, ocaml, ocamldep, quiet, thread, traverse, use_graphics }
+ocamlfind ocamldep -package ocamlgraph -modules Geometry.ml > Geometry.ml.depends
+# Target: Header.ml.depends, tags: { package(ocamlgraph), extension:ml, file:Header.ml, ocaml, ocamldep, quiet, thread, traverse, use_graphics }
+ocamlfind ocamldep -package ocamlgraph -modules Header.ml > Header.ml.depends
+# Target: Geometry.cmo, tags: { package(ocamlgraph), byte, compile, extension:cmo, extension:ml, file:Geometry.cmo, file:Geometry.ml, implem, ocaml, quiet, thread, traverse, use_graphics }
+ocamlfind ocamlc -c -thread -package ocamlgraph -o Geometry.cmo Geometry.ml
+# Target: Header.cmo, tags: { package(ocamlgraph), byte, compile, extension:cmo, extension:ml, file:Header.cmo, file:Header.ml, implem, ocaml, quiet, thread, traverse, use_graphics }
+ocamlfind ocamlc -c -thread -package ocamlgraph -o Header.cmo Header.ml
+# Target: Inference.cmo, tags: { package(ocamlgraph), byte, compile, extension:cmo, extension:ml, file:Inference.cmo, file:Inference.ml, implem, ocaml, quiet, thread, traverse, use_graphics }
+ocamlfind ocamlc -c -thread -package ocamlgraph -o Inference.cmo Inference.ml
+# Target: Inference.byte, tags: { package(ocamlgraph), byte, dont_link_with, extension:byte, file:Inference.byte, link, ocaml, program, quiet, thread, traverse, use_graphics }
+ocamlfind ocamlc -linkpkg graphics.cma -thread -package ocamlgraph Geometry.cmo Header.cmo Inference.cmo -o Inference.byte
+# Compilation successful.

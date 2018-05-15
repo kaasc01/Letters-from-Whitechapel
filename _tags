@@ -1,3 +1,4 @@
 <AsnLib> or <Lib>: include
 <_build>: include
+<_data>: include
 <**/*>: thread, package(ocamlgraph), use_graphics
