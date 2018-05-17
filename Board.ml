@@ -98,7 +98,7 @@ let rec test_me (s : sequence) (initial : int)
       let no_unvisit = list_filter all_moves unvisited in
       (* If any of the possible nodes are visited, then true *)
       if exists (fun elt -> mem elt visited) no_unvisit then true else
-      (* Else, access the next set of moves and repeat the test *)
+      (* Else, repeat the same test procedure for all subsequent moves *)
         let check_next =
           map (fun n -> test_me next n visited unvisited) no_unvisit
         in
@@ -106,7 +106,11 @@ let rec test_me (s : sequence) (initial : int)
            to any of the visited nodes *)
         exists ((=) true) check_next ;;
 
-
+let rec audit_sequence (s : sequence) (init : int)
+                       (visited : int list) (unvisited : int list) =
+  match s with
+  | End ->
+  | Play (this_move, next) ->
 
 
 (* 158 -> C160 -> M161 -> C104 -> M87 -> C69 -> M68 -> M53 -> M67 *)
