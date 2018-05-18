@@ -72,6 +72,16 @@ let map_move_to_table (m : move_type) : ('a, 'a list) Hashtbl.t =
   | Alleyway -> alleyway_table
   | _ -> raise (Invalid_argument "map_move_to_table : unexpected match") ;;
 
+let union lst1 lst2 =
+  let open List in
+  let merged = merge compare lst1 lst2 in
+  sort_uniq compare merged ;;
+
+let rec merge_all (lst : int list list) =
+  match lst with
+  | [] -> []
+  | hd :: tl -> union hd (merge_all tl) ;;
+
 (* Filters a target list against a target list -- returns only values NOT
    found in the filter list *)
 let list_filter (target_lst : int list) (filter_lst : int list) =
@@ -127,7 +137,7 @@ let list_shuffle (lst : int list) : int list =
   map snd sond ;;
 
 (* A list of random numbers between 1 and 195 *)
-let board_circles = List.init 195 (fun x -> x + 1)
+let board_circles = List.init 195 (fun x -> x + 1) ;;
 
 (* Returns the first n elements of a list lst *)
 let rec list_first_n (n : int) (lst : int list) : int list =
@@ -155,9 +165,9 @@ let night1 = sequencify [Carriage; Move; Carriage; Move; Carriage; Move; Move; M
 let night1_moves = [160; 161; 104; 87; 69; 68; 53; 67] ;;
 (* These are randomly generated "did not visit" values to approximate game play --
    first exclude the ones we know from the list*)
-let night1_dnv = get_dnv night1_moves ((List.length night1_moves + 1) * gUESSES) 
+let night1_dnv = get_dnv night1_moves ((List.length night1_moves + 1) * gUESSES) ;;
 (* These are the locations we discovered Jack to have been during this round *)
-let night1_visited = [104; 69]
+let night1_visited = [104; 69] ;;
 
 
 (* This is the location of the night2 murder *)
@@ -169,9 +179,9 @@ let night2 = sequencify [Move; Move; Move; Carriage; Carriage; Move];;
 let night2_moves = [20; 18; 17; 33; 52; 67];;
 (* These are randomly generated "did not visit" values to approximate game play --
    first exclude the ones we know from the list*)
-let night2_dnv = get_dnv night2_moves ((List.length night2_moves + 1) * gUESSES) 
+let night2_dnv = get_dnv night2_moves ((List.length night2_moves + 1) * gUESSES) ;;
 (* These are the locations we discovered Jack to have been during this round *)
-let night2_visited = [17]
+let night2_visited = [17];;
 
 (* This is the location of the night3 murder *)
 let night3_origin = 147 ;;
@@ -182,9 +192,9 @@ let night3 = sequencify [Carriage; Move; Move; Move; Move; Move; Move];;
 let night3_moves = [145; 144; 143; 102; 68; 53; 67];;
 (* These are randomly generated "did not visit" values to approximate game play --
    first exclude the ones we know from the list*)
-let night3_dnv = get_dnv night3_moves ((List.length night3_moves + 1) * gUESSES) 
+let night3_dnv = get_dnv night3_moves ((List.length night3_moves + 1) * gUESSES) ;;
 (* These are the locations we discovered Jack to have been during this round *)
-let night3_visited = [144; 68]
+let night3_visited = [144; 68];;
 
 (* This is the location of the night4 murder *)
 let night4_origin = 27 ;;
@@ -195,9 +205,9 @@ let night4 = sequencify [Move; Carriage; Carriage; Move; Move; Move];;
 let night4_moves = [79; 117; 120; 99; 84; 67];;
 (* These are randomly generated "did not visit" values to approximate game play --
    first exclude the ones we know from the list*)
-let night4_dnv = get_dnv night4_moves ((List.length night4_moves + 1) * gUESSES) 
+let night4_dnv = get_dnv night4_moves ((List.length night4_moves + 1) * gUESSES) ;;
 (* These are the locations we discovered Jack to have been during this round *)
-let night4_visited = []
+let night4_visited = [];;
 
 (* This is the location of the night5 murder *)
 let night5_origin = 65 ;;
@@ -208,9 +218,9 @@ let night5 = sequencify [Move; Move; Move; Move; Carriage; Move; Move; Move; Mov
 let night5_moves = [82; 62; 48; 28; 10; 30; 50; 52; 67];;
 (* These are randomly generated "did not visit" values to approximate game play --
    first exclude the ones we know from the list*)
-let night5_dnv = get_dnv night5_moves ((List.length night5_moves + 1) * gUESSES) 
+let night5_dnv = get_dnv night5_moves ((List.length night5_moves + 1) * gUESSES) ;;
 (* These are the locations we discovered Jack to have been during this round *)
-let night5_visited = [28; 10; 30]
+let night5_visited = [28; 10; 30];;
 
 
 let call_timed (f : 'a -> 'b) (x : 'a) : 'b * float =
@@ -242,10 +252,10 @@ let n5 = call_reporting_time night5_search_space ();;
 
 let intersect (lst : int list list) : int list =
 
-let module S = Set.Make(struct
-                      type t = int
-                      let compare = Pervasives.compare
-                    end) in
+  let module S = Set.Make(struct
+                        type t = int
+                        let compare = Pervasives.compare
+                      end) in
 
   let rec converter (lst : int list list) : S.t = 
     match lst with
