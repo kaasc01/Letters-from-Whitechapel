@@ -11,6 +11,8 @@
       open Carriages;;
       #mod_use "alleyways.ml";;
       open Alleyways;;
+      #mod_use "testnetwork.ml";;
+      open Testnetwork;;
  *) 
 
 
@@ -23,6 +25,7 @@ open Alleyways
 let move_table = Hashtbl.create 195 ;;
 let carriage_table = Hashtbl.create 195;;
 let alleyway_table = Hashtbl.create 195;;
+let test_table = Hashtbl.create 13;;
 
 module S = Set.Make(struct
                       type t = int
@@ -49,9 +52,15 @@ let union lst1 lst2 =
   let merged = merge compare lst1 lst2 in
   sort_uniq compare merged ;;
 
+let rec merge_all (lst : int list list) =
+  match lst with
+  | [] -> []
+  | hd :: tl -> union hd (merge_all tl) ;;
+
 populate_table move_table moves ;;
 populate_table carriage_table carriages ;;
 populate_table alleyway_table alleyways ;;
+populate_table test_table simple_bi ;;
 
 type sequence =
   | End
@@ -85,7 +94,7 @@ let list_filter (target_lst : int list) (filter_lst : int list) =
 (* Given a sequence of moves and an initial position, asserts whether any of 
    the members of the target list can be reached by playing out the sequence *)
 let rec test_me (s : sequence) (initial : int)
-                (visited : int list) (unvisited : int list) : bool =
+                (visited : int list) (unvisited : int list) =
   match s with
   | End -> false
   | Play (this_move, next) ->
@@ -96,21 +105,38 @@ let rec test_me (s : sequence) (initial : int)
       let all_moves = Hashtbl.find this_table initial in
       (* Filter possible nodes for any we know were not visited *)
       let no_unvisit = list_filter all_moves unvisited in
-      (* If any of the possible nodes are visited, then true *)
-      if exists (fun elt -> mem elt visited) no_unvisit then true else
-      (* Else, repeat the same test procedure for all subsequent moves *)
-        let check_next =
-          map (fun n -> test_me next n visited unvisited) no_unvisit
-        in
-        (* Return true if at least one of the following moves allows access
-           to any of the visited nodes *)
-        exists ((=) true) check_next ;;
+      (* Filters an element elt out of the visited list -- returns visited
+         unchanged if elt isn't present *)
+      let remove_visited elt = List.filter ((<>) elt) visited in  
+      
+      let f elt = test_me next elt (remove_visited elt visited) unvisited in
+      map f no_unvisit ;;
 
-let rec audit_sequence (s : sequence) (init : int)
-                       (visited : int list) (unvisited : int list) =
+
+let rec evaluate_play (s : sequence) (initial_position : int)
+                      (must_visit : int list) (do_not_visit : int list)
+                      (possible_positions : int list) =
   match s with
-  | End ->
+  | End -> if must_visit = [] then possible_positions else []
   | Play (this_move, next) ->
+      let open List in
+      (* Identify the right lookup table based on the move*)
+      let this_table = map_move_to_table this_move in (**)
+      (* Pull the list of all possible nodes from current position*)
+      let all_moves = Hashtbl.find this_table initial_position in
+      (* Filter possible nodes for any we know were not visited *)
+      let no_unvisit = list_filter all_moves do_not_visit in
+      (* Filters an element elt out of the visited list -- returns visited
+         unchanged if elt isn't present *)
+      let remove_visited elt = filter ((<>) elt) must_visit in  
+      merge_all (map (
+       
+               fun elt -> evaluate_play next elt (remove_visited elt) do_not_visit no_unvisit
+       
+             ) no_unvisit) ;;
+
+
+
 
 
 (* 158 -> C160 -> M161 -> C104 -> M87 -> C69 -> M68 -> M53 -> M67 *)
