@@ -21,7 +21,7 @@ open Geometry
 
 open Moves
 open Carriages
-open Alleyways
+open Alleyways   
 
 (* Create rapid lookup tables *)
 let move_table = Hashtbl.create 195 ;;
