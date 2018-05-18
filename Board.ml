@@ -28,11 +28,6 @@ let carriage_table = Hashtbl.create 195;;
 let alleyway_table = Hashtbl.create 195;;
 let test_table = Hashtbl.create 13;;
 
-module S = Set.Make(struct
-                      type t = int
-                      let compare = Pervasives.compare
-                    end) ;;
-
 let populate_table (tbl : ('a, 'a list) Hashtbl.t)
                    (lst : (node_type * node_type list) list ) : unit list =
   let open List in
@@ -47,16 +42,6 @@ let populate_table (tbl : ('a, 'a list) Hashtbl.t)
   map (fun (v, vlist) ->
         Hashtbl.add tbl (strip_elt v) (strip_list vlist)
       ) lst ;;
-
-let union lst1 lst2 =
-  let open List in
-  let merged = merge compare lst1 lst2 in
-  sort_uniq compare merged ;;
-
-let rec merge_all (lst : int list list) =
-  match lst with
-  | [] -> []
-  | hd :: tl -> union hd (merge_all tl) ;;
 
 populate_table move_table moves ;;
 populate_table carriage_table carriages ;;
@@ -255,6 +240,12 @@ let n4 = call_reporting_time night4_search_space ();;
 let n5 = call_reporting_time night5_search_space ();;
 
 let intersect (lst : int list list) : int list =
+
+let module S = Set.Make(struct
+                      type t = int
+                      let compare = Pervasives.compare
+                    end) in
+
   let rec converter (lst : int list list) : S.t = 
     match lst with
     | [] -> S.of_list board_circles
