@@ -10,34 +10,8 @@
 (*                                                                        *)
 (**************************************************************************) 
 
-(* As Dienes' CSV mostly describes the visual connections between different
-   nodes on the board (Circle -> Square -> Circle/Square) and not abstract
-   edges (regular move, or carriage move) that can be traversed by Jack, we
-   need to handle this logic separately.
-
-   This file summarizes all possible regular moves that can be made from
-   each circle, as infered from the Dienes' step data.
-
-   Note: Each edge is listed only only once - for example, once Circle 1
-   -> Circle 2 is listed, Circle 2 -> Circle 1 is not listed. It follows
-   that each circle only connects to circles of higher index. *) 
-
-let reciprocity_check = Hashtbl.create 195 ;;
-
-let load_all (lst : (int * int list) list) =
-  List.iter (fun (index, data) -> Hashtbl.add reciprocity_check index data) lst ;;
-
-let check_reciprocities (lst : (int * int list) list) =
-  let open List in
-  map (fun (index, data) -> 
-    (index, map (fun elt -> mem index (Hashtbl.find reciprocity_check elt)) data)
-  ) lst ;;
-
-let summarize_errors (lst : (int * bool list) list) =
-  List.fold_left (fun acc (index, data) ->
-    if List.exists ((=) false) data then (index, data) :: acc else acc
-) [] lst ;;
-
+(* The data below describes the linkages between circles on the Whitechapel
+   board that are feasible through a regular move *)
 
 let moves =
   [(1, [2; 6; 7; 8; 9; 24; 26; 28]);

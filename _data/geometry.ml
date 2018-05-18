@@ -11,22 +11,27 @@
 (**************************************************************************)
 
 (* This file provides some basic geometry information about the Whitechapel
-   game board. We start by defining some data types useful for modeling
-   vertices and edges in a connected graph. *)
-   
-type node_type = 
-  | Circle of int
-  | Square of (direction * node_type)
-and direction =
-  | NorthOf
-  | SouthOf
-  | EastOf
-  | WestOf
-  | SouthWestOf
-  | SouthSouthOf
-
+   game board. We start by defining some of the basic data types useful for
+   modling a game *)
+  
+(* Whitechapel features three moves types for Jack: a regular Move, a double
+   or Carriage move, and an Alleyway move*)
 type move_type =
   | Move
   | Carriage
   | Alleyway
-  | Step
+
+(* When played consecutively, individual moves combine to form a sequence *)
+type sequence =
+  | End
+  | Play of move_type * sequence
+
+(* Translates a list of moves into a sequence *)
+let rec sequencify (lst : move_type list) : sequence =
+  match lst with
+  | [] -> End
+  | hd :: tl ->
+    match hd with
+    | Move -> Play(Move, sequencify tl)
+    | Carriage -> Play(Carriage, sequencify tl)
+    | Alleyway -> Play(Alleyway, sequencify tl) ;;

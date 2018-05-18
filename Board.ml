@@ -30,47 +30,20 @@ let alleyway_table = Hashtbl.create 195;;
 let test_table = Hashtbl.create 13;;
 
 let populate_table (tbl : ('a, 'a list) Hashtbl.t)
-                   (lst : (node_type * node_type list) list ) : unit list =
-  let open List in
-  let strip_elt (elt : node_type) : int =
-    match elt with
-    | Circle n -> n
-    | _ -> raise (Invalid_argument "strip_type : unexpected match")
-  in
-  let strip_list (lst : node_type list) : int list =
-    map strip_elt lst
-  in
-  map (fun (v, vlist) ->
-        Hashtbl.add tbl (strip_elt v) (strip_list vlist)
-      ) lst ;;
+                   (lst : (int * int list) list) : unit list =
+  List.map (fun (v, vlist) -> Hashtbl.add tbl v vlist) lst ;;
 
 populate_table move_table moves ;;
 populate_table carriage_table carriages ;;
 populate_table alleyway_table alleyways ;;
 populate_table test_table simple_bi ;;
 
-type sequence =
-  | End
-  | Play of move_type * sequence ;;
-
-(* Converts a list of moves types into a sequence *)
-let rec sequencify (lst : move_type list) : sequence =
-  match lst with
-  | [] -> End
-  | hd :: tl ->
-    match hd with
-    | Move -> Play(Move, sequencify tl)
-    | Carriage -> Play(Carriage, sequencify tl)
-    | Alleyway -> Play(Alleyway, sequencify tl)
-    | _ -> raise (Invalid_argument "sequencify : unexpected match");;
-
 (* Given a move type, returns the appropriate lookup table to use*)
-let map_move_to_table (m : move_type) : ('a, 'a list) Hashtbl.t =
+let map_move_to_table (m : move_type) : (int, int list) Hashtbl.t =
   match m with
   | Move -> move_table
   | Carriage -> carriage_table
-  | Alleyway -> alleyway_table
-  | _ -> raise (Invalid_argument "map_move_to_table : unexpected match") ;;
+  | Alleyway -> alleyway_table ;;
 
 let union lst1 lst2 =
   let open List in
