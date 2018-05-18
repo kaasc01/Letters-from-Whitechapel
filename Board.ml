@@ -92,33 +92,6 @@ let list_filter (target_lst : int list) (filter_lst : int list) =
   let open List in
   filter (fun elt -> not (mem elt filter_lst)) target_lst ;;
 
-let evaluate_sequence_list (s : sequence) (initial_position : int)
-                      (must_visit : int list) (do_not_visit : int list)
-                     : int list =
-  let rec eval_move (s : sequence) (initial_position : int)
-                    (must_visit : int list) (possible_position : int list)
-                   : int list =
-    match s with
-    | End -> if must_visit = [] then possible_position else []
-    | Play (this_move, next) ->
-        let open List in
-        (* Identify the right lookup table based on the move*)
-        let this_table = map_move_to_table this_move in (**)
-        (* Pull the list of all possible nodes from current position*)
-        let all_moves = Hashtbl.find this_table initial_position in
-        (* Filter possible nodes for any we know were not visited *)
-        let no_unvisit = list_filter all_moves do_not_visit in
-        (* Filters an element elt out of the visited list -- returns visited
-           unchanged if elt isn't present *)
-        let remove_visited elt = filter ((<>) elt) must_visit in  
-        merge_all (map (
-         
-                 fun elt -> eval_move next elt (remove_visited elt) [elt]
-         
-               ) no_unvisit)
-  in
-  eval_move s initial_position must_visit [] ;;
-
 let evaluate_sequence_logger (s : sequence) (initial_position : int)
                       (must_visit : int list) (do_not_visit : int list)
                      : int list =
@@ -254,22 +227,36 @@ let night5_dnv = get_dnv night5_moves ((List.length night5_moves + 1) * gUESSES)
 let night5_visited = [28; 10; 30]
 
 
+let call_timed (f : 'a -> 'b) (x : 'a) : 'b * float =
+  let t0 = Unix.gettimeofday() in 
+  let result = f x in 
+  let t1 = Unix.gettimeofday() in
+  (result, t1 -. t0) ;;
+
+(* call_reporting_time f x -- Applies f to x returning the result,
+   reporting timing information on stdout as a side effect. *)
+  
+let call_reporting_time (f : 'a -> 'b) (x : 'a) : 'b =
+  let result, time = call_timed f x in
+  Printf.printf "time (msecs): %f\n" (time *. 1000.);
+  result ;;
+
+
 let night1_search_space () = evaluate_sequence_logger night1 night1_origin night1_visited night1_dnv ;;
 let night2_search_space () = evaluate_sequence_logger night2 night2_origin night2_visited night2_dnv ;;
 let night3_search_space () = evaluate_sequence_logger night3 night3_origin night3_visited night3_dnv ;;
 let night4_search_space () = evaluate_sequence_logger night4 night4_origin night4_visited night4_dnv ;;
 let night5_search_space () = evaluate_sequence_logger night5 night5_origin night4_visited night5_dnv ;;
 
-let night2_list () = evaluate_sequence_list night2 night2_origin night2_visited night2_dnv ;;
-let night2_logger () = evaluate_sequence_logger night2 night2_origin night2_visited night2_dnv ;;
+let n1 = call_reporting_time night1_search_space ();;
+let n2 = call_reporting_time night2_search_space ();;
+let n3 = call_reporting_time night3_search_space ();;
+let n4 = call_reporting_time night4_search_space ();;
+let n5 = call_reporting_time night5_search_space ();;
 
-let test_list = call_reporting_time night2_list ();;
-let test_logger = call_reporting_time night2_logger ();;
-
-let night1_list () = evaluate_sequence_list night1 night1_origin night1_visited night1_dnv ;;
-let night1_logger () = evaluate_sequence_logger night1 night1_origin night1_visited night1_dnv ;;
-
-let test_list = call_reporting_time night1_list ();;
-let test_logger = call_reporting_time night1_logger ();;
-
-
+let intersect (lst : int list list) : int list =
+  let rec converter (lst : int list list) : S.t = 
+    match lst with
+    | [] -> S.of_list board_circles
+    | hd :: tl -> S.inter (S.of_list hd) (converter tl)
+  in S.elements (converter lst) ;;
