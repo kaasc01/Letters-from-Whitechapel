@@ -1,6 +1,7 @@
 (* Note: Commands below required for troubleshooting in REPL:
       #use "topfind" ;;
       #require "ocamlgraph" ;;
+      #require "unix";;
       open Graph ;;
       #directory "/home/christian/CS/Projects/Whitechapel/_data" ;;
       #mod_use "geometry.ml";;
@@ -91,92 +92,184 @@ let list_filter (target_lst : int list) (filter_lst : int list) =
   let open List in
   filter (fun elt -> not (mem elt filter_lst)) target_lst ;;
 
-(* Given a sequence of moves and an initial position, asserts whether any of 
-   the members of the target list can be reached by playing out the sequence *)
-let rec test_me (s : sequence) (initial : int)
-                (visited : int list) (unvisited : int list) =
-  match s with
-  | End -> false
-  | Play (this_move, next) ->
-      let open List in
-      (* Identify the right lookup table based on the move*)
-      let this_table = map_move_to_table this_move in
-      (* Pull the list of all possible nodes from current position*)
-      let all_moves = Hashtbl.find this_table initial in
-      (* Filter possible nodes for any we know were not visited *)
-      let no_unvisit = list_filter all_moves unvisited in
-      (* Filters an element elt out of the visited list -- returns visited
-         unchanged if elt isn't present *)
-      let remove_visited elt = List.filter ((<>) elt) visited in  
-      
-      let f elt = test_me next elt (remove_visited elt visited) unvisited in
-      map f no_unvisit ;;
-
-
-let rec evaluate_play (s : sequence) (initial_position : int)
+let evaluate_sequence_list (s : sequence) (initial_position : int)
                       (must_visit : int list) (do_not_visit : int list)
-                      (possible_positions : int list) =
-  match s with
-  | End -> if must_visit = [] then possible_positions else []
-  | Play (this_move, next) ->
-      let open List in
-      (* Identify the right lookup table based on the move*)
-      let this_table = map_move_to_table this_move in (**)
-      (* Pull the list of all possible nodes from current position*)
-      let all_moves = Hashtbl.find this_table initial_position in
-      (* Filter possible nodes for any we know were not visited *)
-      let no_unvisit = list_filter all_moves do_not_visit in
-      (* Filters an element elt out of the visited list -- returns visited
-         unchanged if elt isn't present *)
-      let remove_visited elt = filter ((<>) elt) must_visit in  
-      merge_all (map (
-       
-               fun elt -> evaluate_play next elt (remove_visited elt) do_not_visit no_unvisit
-       
-             ) no_unvisit) ;;
+                     : int list =
+  let rec eval_move (s : sequence) (initial_position : int)
+                    (must_visit : int list) (possible_position : int list)
+                   : int list =
+    match s with
+    | End -> if must_visit = [] then possible_position else []
+    | Play (this_move, next) ->
+        let open List in
+        (* Identify the right lookup table based on the move*)
+        let this_table = map_move_to_table this_move in (**)
+        (* Pull the list of all possible nodes from current position*)
+        let all_moves = Hashtbl.find this_table initial_position in
+        (* Filter possible nodes for any we know were not visited *)
+        let no_unvisit = list_filter all_moves do_not_visit in
+        (* Filters an element elt out of the visited list -- returns visited
+           unchanged if elt isn't present *)
+        let remove_visited elt = filter ((<>) elt) must_visit in  
+        merge_all (map (
+         
+                 fun elt -> eval_move next elt (remove_visited elt) [elt]
+         
+               ) no_unvisit)
+  in
+  eval_move s initial_position must_visit [] ;;
+
+let evaluate_sequence_logger (s : sequence) (initial_position : int)
+                      (must_visit : int list) (do_not_visit : int list)
+                     : int list =
+  let logger = Hashtbl.create 100000 in
+  let rec eval_move (s : sequence) (initial_position : int)
+                    (must_visit : int list) (possible_position : int list)
+                   : int list =
+    match s with
+    | End -> if must_visit = [] then possible_position else []
+    | Play (this_move, next) ->
+        let open List in
+        (* Identify the right lookup table based on the move*)
+        let this_table = map_move_to_table this_move in (**)
+        (* Pull the list of all possible nodes from current position*)
+        let all_moves = Hashtbl.find this_table initial_position in
+        (* Filter possible nodes for any we know were not visited *)
+        let no_unvisit = list_filter all_moves do_not_visit in
+        (* Filters an element elt out of the visited list -- returns visited
+           unchanged if elt isn't present *)
+        let remove_visited elt = filter ((<>) elt) must_visit in  
+        merge_all (map (
+                 fun elt ->
+                  try
+                    (* Try to find our move combo in the log. If it is already
+                       done then terminate this branch *)
+                    Hashtbl.find logger (elt, next, must_visit);
+                    []
+                  with
+                  (* If the logger doesn have this branch yet, then add it to the log
+                     and proceeed as before -- tuple of this element and remaining moves *)
+                  | _ -> Hashtbl.add logger (elt, next, must_visit) [];
+                         eval_move next elt (remove_visited elt) [elt]
+         
+               ) no_unvisit)
+  in
+  eval_move s initial_position must_visit [] ;;
 
 
 
 
 
-(* 158 -> C160 -> M161 -> C104 -> M87 -> C69 -> M68 -> M53 -> M67 *)
-let night1_moves = [160; 161; 104; 87; 69; 68; 53];;
+(* Helper function to shuffle a list randomly *)
+let list_shuffle (lst : int list) : int list =
+  let open List in
+  let nd = map (fun c -> (Random.bits (), c)) lst in
+  let sond = sort compare nd in
+  map snd sond ;;
+
+(* A list of random numbers between 1 and 195 *)
+let board_circles = List.init 195 (fun x -> x + 1)
+
+(* Returns the first n elements of a list lst *)
+let rec list_first_n (n : int) (lst : int list) : int list =
+  match lst with
+  | [] -> failwith "firstk"
+  | hd :: tl -> if n = 1 then [hd] else hd :: list_first_n (n - 1) tl ;;
+
+(* Generates a list of random "did not visit" values to simulate gameplay --
+   start by excluding the circles we know to have been visited, then shuffle,
+   before taking the first n values *)
+let get_dnv (excl : int list) (n : int) : int list =
+  let excluded_list = list_filter board_circles excl in
+  let shuffled = list_shuffle excluded_list in
+  list_first_n n shuffled ;;
+
+let gUESSES = 5 ;; (* Guesses per night for the detective player *)
+
+(* This is the location of the night1 murder *)
+let night1_origin = 158 ;;
+(* These are the moves Jack makes on night1 *)
+let night1_bak = sequencify [Carriage; Move];;
 let night1 = sequencify [Carriage; Move; Carriage; Move; Carriage; Move; Move; Move];;
-(* 21 -> M20 -> M18 -> M17 -> C33 -> C52 -> M67*)
-let night2_moves = [20; 18; 17; 33; 52];;
+(* These are the actual cells visited, which the solver does not know *)
+(* 158 -> C160 -> M161 -> C104 -> M87 -> C69 -> M68 -> M53 -> M67 *)
+let night1_moves = [160; 161; 104; 87; 69; 68; 53; 67] ;;
+(* These are randomly generated "did not visit" values to approximate game play --
+   first exclude the ones we know from the list*)
+let night1_dnv = get_dnv night1_moves ((List.length night1_moves + 1) * gUESSES) 
+(* These are the locations we discovered Jack to have been during this round *)
+let night1_visited = [104; 69]
+
+
+(* This is the location of the night2 murder *)
+let night2_origin = 21 ;;
+(* These are the moves Jack makes on night2 *)
 let night2 = sequencify [Move; Move; Move; Carriage; Carriage; Move];;
-(* 147 -> C145 -> M144 -> M143 -> M102 -> M68 -> M53 -> M67*)
-let night3_moves = [145; 144; 143; 102; 68; 53];;
+(* These are the actual cells visited, which the solver does not know *)
+(* 21 -> M20 -> M18 -> M17 -> C33 -> C52 -> M67*)
+let night2_moves = [20; 18; 17; 33; 52; 67];;
+(* These are randomly generated "did not visit" values to approximate game play --
+   first exclude the ones we know from the list*)
+let night2_dnv = get_dnv night2_moves ((List.length night2_moves + 1) * gUESSES) 
+(* These are the locations we discovered Jack to have been during this round *)
+let night2_visited = [17]
+
+(* This is the location of the night3 murder *)
+let night3_origin = 147 ;;
+(* These are the moves Jack makes on night3 *)
 let night3 = sequencify [Carriage; Move; Move; Move; Move; Move; Move];;
-(* 27 -> M79 -> C117 -> C120 -> M99 -> M84 -> M67*)
-let night4_moves = [79; 117; 120; 99; 84];;
+(* These are the actual cells visited, which the solver does not know *)
+(* 147 -> C145 -> M144 -> M143 -> M102 -> M68 -> M53 -> M67*)
+let night3_moves = [145; 144; 143; 102; 68; 53; 67];;
+(* These are randomly generated "did not visit" values to approximate game play --
+   first exclude the ones we know from the list*)
+let night3_dnv = get_dnv night3_moves ((List.length night3_moves + 1) * gUESSES) 
+(* These are the locations we discovered Jack to have been during this round *)
+let night3_visited = [144; 68]
+
+(* This is the location of the night4 murder *)
+let night4_origin = 27 ;;
+(* These are the moves Jack makes on night4 *)
 let night4 = sequencify [Move; Carriage; Carriage; Move; Move; Move];;
-(* 65 -> M82 -> M62 -> M48 -> M28 -> C10 -> M30 -> M50 -> M52 -> M67*)
-let night5_moves = [82; 62; 48; 28; 10; 30; 50; 52];;
+(* These are the actual cells visited, which the solver does not know *)
+(* 27 -> M79 -> C117 -> C120 -> M99 -> M84 -> M67*)
+let night4_moves = [79; 117; 120; 99; 84; 67];;
+(* These are randomly generated "did not visit" values to approximate game play --
+   first exclude the ones we know from the list*)
+let night4_dnv = get_dnv night4_moves ((List.length night4_moves + 1) * gUESSES) 
+(* These are the locations we discovered Jack to have been during this round *)
+let night4_visited = []
+
+(* This is the location of the night5 murder *)
+let night5_origin = 65 ;;
+(* These are the moves Jack makes on night5 *)
 let night5 = sequencify [Move; Move; Move; Move; Carriage; Move; Move; Move; Move];;
+(* These are the actual cells visited, which the solver does not know *)
+(* 65 -> M82 -> M62 -> M48 -> M28 -> C10 -> M30 -> M50 -> M52 -> M67*)
+let night5_moves = [82; 62; 48; 28; 10; 30; 50; 52; 67];;
+(* These are randomly generated "did not visit" values to approximate game play --
+   first exclude the ones we know from the list*)
+let night5_dnv = get_dnv night5_moves ((List.length night5_moves + 1) * gUESSES) 
+(* These are the locations we discovered Jack to have been during this round *)
+let night5_visited = [28; 10; 30]
 
-let n1p = generate_space night1 158 (elim_gen (5 * (List.length night1_moves)) night1_moves);;
-let n2p = generate_space night2 21 (elim_gen (5 * (List.length night2_moves)) night2_moves);;
-let n3p = generate_space night3 147 (elim_gen (5 * (List.length night3_moves)) night3_moves);;
-let n4p = generate_space night4 27 (elim_gen (5 * (List.length night4_moves)) night4_moves);;
-let n5p = generate_space night5 65 (elim_gen (5 * (List.length night5_moves)) night5_moves);;
 
-let reduce (lst : int list list) =
-  let set_e = List.init 195 (fun x -> x + 1) in
-  let search_space = ref (S.of_list set_e) in
-  List.iter (fun elt -> search_space := S.inter (S.of_list elt) (!search_space)) lst;
-  S.elements (!search_space);;
+let night1_search_space () = evaluate_sequence_logger night1 night1_origin night1_visited night1_dnv ;;
+let night2_search_space () = evaluate_sequence_logger night2 night2_origin night2_visited night2_dnv ;;
+let night3_search_space () = evaluate_sequence_logger night3 night3_origin night3_visited night3_dnv ;;
+let night4_search_space () = evaluate_sequence_logger night4 night4_origin night4_visited night4_dnv ;;
+let night5_search_space () = evaluate_sequence_logger night5 night5_origin night4_visited night5_dnv ;;
 
-let elim_gen (n : int) (lst : int list) =
-  let rec iter (n : int) (lst : int list) =
-    if n = 0 then lst 
-    else iter (n - 1) ((Random.int 195 + 1) :: lst)
-  in
-  let rec truncate (n : int) (build_down : int list) (build_up : int list) =
-    match build_down with
-    | [] -> []
-    | hd :: tl -> if (n = 0) then build_up
-                  else truncate (n - 1) tl (hd :: build_up)
-  in
-  let rands = List.filter (fun x -> not (List.mem x lst)) (iter 100 []) in
-  truncate n rands [] ;;
+let night2_list () = evaluate_sequence_list night2 night2_origin night2_visited night2_dnv ;;
+let night2_logger () = evaluate_sequence_logger night2 night2_origin night2_visited night2_dnv ;;
+
+let test_list = call_reporting_time night2_list ();;
+let test_logger = call_reporting_time night2_logger ();;
+
+let night1_list () = evaluate_sequence_list night1 night1_origin night1_visited night1_dnv ;;
+let night1_logger () = evaluate_sequence_logger night1 night1_origin night1_visited night1_dnv ;;
+
+let test_list = call_reporting_time night1_list ();;
+let test_logger = call_reporting_time night1_logger ();;
+
+

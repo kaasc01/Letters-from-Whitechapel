@@ -91,7 +91,7 @@ let moves =
    (Circle 65, [Circle 84; Circle 83; Circle 82; Circle 67; Circle 66; Circle 63; Circle 51]);
    (Circle 66, [Circle 84; Circle 67; Circle 65; Circle 64; Circle 51; Circle 50; Circle 49; Circle 30; Circle 29]);
    (Circle 67, [Circle 84; Circle 66; Circle 65; Circle 53; Circle 52; Circle 51]);
-   (Circle 68, [Circle 86; Circle 56; Circle 55; Circle 54; Circle 53; Circle 37; Circle 35; Circle 34]);
+   (Circle 68, [Circle 102; Circle 86; Circle 56; Circle 55; Circle 54; Circle 53; Circle 37; Circle 35; Circle 34]);
    (Circle 69, [Circle 127; Circle 103; Circle 102; Circle 70]);
    (Circle 70, [Circle 103; Circle 87; Circle 71; Circle 69]);
    (Circle 71, [Circle 104; Circle 88; Circle 87; Circle 72; Circle 70]);
@@ -125,7 +125,7 @@ let moves =
    (Circle 99, [Circle 120; Circle 100; Circle 86; Circle 85; Circle 84; Circle 83]);
    (Circle 100, [Circle 170; Circle 155; Circle 141; Circle 140; Circle 125; Circle 124; Circle 123; Circle 122; Circle 120; Circle 99; Circle 86; Circle 85; Circle 84; Circle 83]);
    (Circle 101, [Circle 156; Circle 143; Circle 142; Circle 127; Circle 126; Circle 125; Circle 124; Circle 102; Circle 85]);
-   (Circle 102, [Circle 156; Circle 143; Circle 142; Circle 127; Circle 126; Circle 125; Circle 101; Circle 69]);
+   (Circle 102, [Circle 156; Circle 143; Circle 142; Circle 127; Circle 126; Circle 125; Circle 101; Circle 69; Circle 68]);
    (Circle 103, [Circle 128; Circle 127; Circle 70; Circle 69]);
    (Circle 104, [Circle 145; Circle 130; Circle 129; Circle 105; Circle 88; Circle 87; Circle 71]);
    (Circle 105, [Circle 130; Circle 107; Circle 106; Circle 104; Circle 91; Circle 89; Circle 88]);
