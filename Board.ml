@@ -23,6 +23,7 @@ open Moves
 open Carriages
 open Alleyways
 
+(* Create rapid lookup tables *)
 let move_table = Hashtbl.create 195 ;;
 let carriage_table = Hashtbl.create 195;;
 let alleyway_table = Hashtbl.create 195;;
